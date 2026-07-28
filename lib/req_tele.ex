@@ -1,4 +1,4 @@
-defmodule ReqTelemetry do
+defmodule ReqTele do
   @external_resource "README.md"
   @moduledoc "README.md" |> File.read!() |> String.split("<!-- MDOC !-->") |> Enum.fetch!(1)
 
@@ -38,7 +38,7 @@ defmodule ReqTelemetry do
   These same options can also be passed through `Req` options under the `:telemetry` key to
   change the behavior on a per-request basis. Maps of metadata will be merged. For example:
 
-      req = Req.new() |> ReqTelemetry.attach(metadata: %{api_version: 1})
+      req = Req.new() |> ReqTele.attach(metadata: %{api_version: 1})
 
       Req.get!(req,
         url: "https://api.example.org/endpoint",
@@ -59,7 +59,7 @@ defmodule ReqTelemetry do
 
   Emit all events by default, limiting them per-request as needed.
 
-      req = Req.new() |> ReqTelemetry.attach()
+      req = Req.new() |> ReqTele.attach()
 
       # Emits all events
       Req.get!(req, url: "https://example.org")
@@ -72,7 +72,7 @@ defmodule ReqTelemetry do
 
   Suppress all events by default, enabling them per-request as needed.
 
-      req = Req.new() |> ReqTelemetry.attach(false)
+      req = Req.new() |> ReqTele.attach(false)
 
       # Will not emit events
       Req.get!(req, url: "https://example.org")
@@ -85,7 +85,7 @@ defmodule ReqTelemetry do
 
   Finally, suppress only a certain kind of event by default, overriding that default as needed.
 
-      req = Req.new() |> ReqTelemetry.attach(pipeline: false)
+      req = Req.new() |> ReqTele.attach(pipeline: false)
 
       # Will only emit adapter events
       Req.get!(req, url: "https://example.org")
@@ -120,7 +120,7 @@ defmodule ReqTelemetry do
   end
 
   @doc """
-  Returns a list of events emitted by `ReqTelemetry`.
+  Returns a list of events emitted by `ReqTele`.
   """
   @spec events(:all | :pipeline | :adapter) :: [:telemetry.event_name(), ...]
   def events(kind \\ :all)
@@ -129,7 +129,7 @@ defmodule ReqTelemetry do
   def events(:adapter), do: @adapter_events
 
   @doc """
-  Attach a basic telemetry event handler that logs `ReqTelemetry` events.
+  Attach a basic telemetry event handler that logs `ReqTele` events.
 
   ## Usage
 
@@ -137,7 +137,7 @@ defmodule ReqTelemetry do
 
       @impl true
       def start(_type, _args) do
-        ReqTelemetry.attach_default_logger()
+        ReqTele.attach_default_logger()
 
         children = [
           ...
@@ -150,13 +150,13 @@ defmodule ReqTelemetry do
   the kind of events to log or a list of specific events to log.
 
       # Logs all events
-      :ok = ReqTelemetry.attach_default_logger()
+      :ok = ReqTele.attach_default_logger()
 
       # Logs only adapter events
-      :ok = ReqTelemetry.attach_default_logger(:adapter)
+      :ok = ReqTele.attach_default_logger(:adapter)
 
       # Logs only pipeline errors
-      :ok = ReqTelemetry.attach_default_logger([[:req, :request, :pipeline, :error]])
+      :ok = ReqTele.attach_default_logger([[:req, :request, :pipeline, :error]])
 
   ## Example
 
@@ -188,14 +188,14 @@ defmodule ReqTelemetry do
 
     unless unknown_events == [] do
       raise ArgumentError, """
-      cannot attach ReqTelemetry logger to unknown events: #{inspect(unknown_events)}
+      cannot attach ReqTele logger to unknown events: #{inspect(unknown_events)}
       """
     end
 
     :telemetry.attach_many(
       "req-telemetry-handler",
       events,
-      &ReqTelemetry.Logger.handle_event/4,
+      &ReqTele.Logger.handle_event/4,
       nil
     )
   end
@@ -339,7 +339,7 @@ defmodule ReqTelemetry do
 
   defp options_error(opts) do
     """
-    Invalid `ReqTelemetry` options. Valid options must be a boolean
+    Invalid `ReqTele` options. Valid options must be a boolean
     or a keyword list/map containing `:adapter` and/or `:pipeline` keys.
 
     Got: #{inspect(opts)}

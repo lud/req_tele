@@ -1,6 +1,6 @@
-[![Hex.pm](https://img.shields.io/hexpm/v/req_telemetry)](https://hex.pm/packages/req_telemetry)
-[![HexDocs.pm](https://img.shields.io/badge/hex.pm-docs-8e7ce6.svg)](https://hexdocs.pm/req_telemetry)
-[![CI](https://github.com/zachallaun/req_telemetry/actions/workflows/ci.yml/badge.svg)](https://github.com/zachallaun/req_telemetry/actions/workflows/ci.yml)
+[![Hex.pm](https://img.shields.io/hexpm/v/req_tele)](https://hex.pm/packages/req_tele)
+[![HexDocs.pm](https://img.shields.io/badge/hex.pm-docs-8e7ce6.svg)](https://hexdocs.pm/req_tele)
+[![CI](https://github.com/lud/req_tele/actions/workflows/ci.yml/badge.svg)](https://github.com/lud/req_tele/actions/workflows/ci.yml)
 
 > [!NOTE]
 > This project is a fork of [`req_telemetry`](https://github.com/zachallaun/req_telemetry)
@@ -14,23 +14,23 @@
 
 ## Usage
 
-Preferably, `ReqTelemetry` should be the last plugin attached to your `%Req.Request{}`. This
-allows `ReqTelemetry` to emit events both at the very start and very end of the request and
+Preferably, `ReqTele` should be the last plugin attached to your `%Req.Request{}`. This
+allows `ReqTele` to emit events both at the very start and very end of the request and
 response pipelines. In this way, you can observe both the total time spent issuing and
 processing the request and response, as well as the time spent only with the request adapter.
 
 ```elixir
-req = Req.new() |> ReqTelemetry.attach()
+req = Req.new() |> ReqTele.attach()
 
 req =
   Req.new(adapter: &my_adapter/1)
   |> ReqSomeOtherThing.attach()
-  |> ReqTelemetry.attach()
+  |> ReqTele.attach()
 ```
 
 ## Events
 
-`ReqTelemetry` produces the following events (in order of event dispatch):
+`ReqTele` produces the following events (in order of event dispatch):
 
   * `[:req, :request, :pipeline, :start]`
   * `[:req, :request, :adapter, :start]`
@@ -39,12 +39,12 @@ req =
   * `[:req, :request, :pipeline, :stop]`
   * `[:req, :request, :pipeline, :error]`
 
-You can configure `ReqTelemetry` to produce only `:pipeline` or `:adapter` events; see
-`ReqTelemetry.attach/2` for options.
+You can configure `ReqTele` to produce only `:pipeline` or `:adapter` events; see
+`ReqTele.attach/2` for options.
 
 ## Logging
 
-`ReqTelemetry` defines a a simple, default logger that logs basic request information and timing.
+`ReqTele` defines a simple, default logger that logs basic request information and timing.
 
 Here's how a successful request might be logged:
 
@@ -53,19 +53,19 @@ Here's how a successful request might be logged:
     Req:479128347 - 200 in 403ms (adapter)
     Req:479128347 - 200 in 413ms (pipeline)
 
-For usage and configuration, see `ReqTelemetry.attach_default_logger/1`.
+For usage and configuration, see `ReqTele.attach_default_logger/1`.
 
 <!-- MDOC !-->
 
 ## Installation
 
-`req_telemetry` is available through [hex.pm](https://hex.pm/packages/req_telemetry), and can be
+`req_tele` is available through [hex.pm](https://hex.pm/packages/req_tele), and can be
 installed by adding the following to your list of dependencies:
 
 ```elixir
 def deps do
   [
-    {:req_telemetry, "~> 0.1.0"}
+    {:req_tele, "~> 0.1.0"}
   ]
 end
 ```

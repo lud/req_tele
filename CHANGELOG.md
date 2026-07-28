@@ -4,9 +4,18 @@ This format is based on [Keep a Changelog](https://keepachangelog.com) and this 
 
 ## Unreleased
 
+### Changed
+
+  * **Breaking:** Renamed the project from `req_telemetry`/`ReqTelemetry` to `req_tele`/`ReqTele`. This package is a fork of [`req_telemetry`](https://github.com/zachallaun/req_telemetry) by Zach Allaun.
+  * Event `:url` metadata now uses the path params template when present ([zachallaun/req_telemetry#11](https://github.com/zachallaun/req_telemetry/pull/11), thanks @hauleth!)
+
+### Added
+
+  * Event metadata now includes the full `Req.Request` and `Req.Response` structs under the `:request` and `:response` keys ([zachallaun/req_telemetry#12](https://github.com/zachallaun/req_telemetry/pull/12), thanks @martosaur!)
+
 ### Fixed
 
-  * Upgrade `req` to `~> 0.6` to resolve dependency vulnerabilities.
+  * Upgrade `req` to `~> 0.6` to resolve dependency vulnerabilities. ([zachallaun/req_telemetry#13](https://github.com/zachallaun/req_telemetry/pull/13), thanks @Wigny!)
 
 ## v0.1.1 (2024-7-10)
 

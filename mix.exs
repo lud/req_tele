@@ -1,13 +1,13 @@
-defmodule ReqTelemetry.MixProject do
+defmodule ReqTele.MixProject do
   use Mix.Project
 
-  @name "ReqTelemetry"
+  @name "ReqTele"
   @version "0.1.2"
-  @source_url "https://github.com/lud/req_telemetry"
+  @source_url "https://github.com/lud/req_tele"
 
   def project do
     [
-      app: :req_telemetry,
+      app: :req_tele,
       name: @name,
       version: @version,
       source_url: @source_url,
@@ -49,7 +49,7 @@ defmodule ReqTelemetry.MixProject do
   defp docs do
     [
       source_url: @source_url,
-      main: "ReqTelemetry",
+      main: "ReqTele",
       extras: [
         "README.md": [title: "Overview"],
         "CHANGELOG.md": [title: "Changelog"]

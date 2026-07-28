@@ -1,31 +1,31 @@
-defmodule ReqTelemetryTest do
+defmodule ReqTeleTest do
   use ExUnit.Case
 
   import ExUnit.CaptureLog
 
   describe "attach/2" do
     test "merges default :telemetry options when none are specified" do
-      req = Req.new() |> ReqTelemetry.attach()
-      assert {:ok, %{adapter: true, pipeline: true}} = ReqTelemetry.fetch_options(req)
+      req = Req.new() |> ReqTele.attach()
+      assert {:ok, %{adapter: true, pipeline: true}} = ReqTele.fetch_options(req)
     end
 
     test "merges default :telemetry options when some are specified" do
-      req = Req.new() |> ReqTelemetry.attach(pipeline: false)
-      assert {:ok, %{adapter: true, pipeline: false}} = ReqTelemetry.fetch_options(req)
+      req = Req.new() |> ReqTele.attach(pipeline: false)
+      assert {:ok, %{adapter: true, pipeline: false}} = ReqTele.fetch_options(req)
 
-      req = Req.new() |> ReqTelemetry.attach(adapter: false)
-      assert {:ok, %{adapter: false, pipeline: true}} = ReqTelemetry.fetch_options(req)
+      req = Req.new() |> ReqTele.attach(adapter: false)
+      assert {:ok, %{adapter: false, pipeline: true}} = ReqTele.fetch_options(req)
 
-      req = Req.new() |> ReqTelemetry.attach(adapter: false, pipeline: false)
-      assert {:ok, %{adapter: false, pipeline: false}} = ReqTelemetry.fetch_options(req)
+      req = Req.new() |> ReqTele.attach(adapter: false, pipeline: false)
+      assert {:ok, %{adapter: false, pipeline: false}} = ReqTele.fetch_options(req)
     end
 
     test "accepts boolean options" do
-      req = Req.new() |> ReqTelemetry.attach(true)
-      assert {:ok, %{adapter: true, pipeline: true}} = ReqTelemetry.fetch_options(req)
+      req = Req.new() |> ReqTele.attach(true)
+      assert {:ok, %{adapter: true, pipeline: true}} = ReqTele.fetch_options(req)
 
-      req = Req.new() |> ReqTelemetry.attach(false)
-      assert {:ok, %{adapter: false, pipeline: false}} = ReqTelemetry.fetch_options(req)
+      req = Req.new() |> ReqTele.attach(false)
+      assert {:ok, %{adapter: false, pipeline: false}} = ReqTele.fetch_options(req)
     end
 
     test "raises if given invalid options" do
@@ -38,7 +38,7 @@ defmodule ReqTelemetryTest do
       ]
 
       for opts <- invalid do
-        assert_raise ArgumentError, fn -> Req.new() |> ReqTelemetry.attach(opts) end
+        assert_raise ArgumentError, fn -> Req.new() |> ReqTele.attach(opts) end
       end
     end
   end
@@ -46,7 +46,7 @@ defmodule ReqTelemetryTest do
   describe "attach_default_logger/1" do
     test "raises if given unknown events" do
       assert_raise ArgumentError, fn ->
-        ReqTelemetry.attach_default_logger([:unknown, :event])
+        ReqTele.attach_default_logger([:unknown, :event])
       end
     end
   end
@@ -66,7 +66,7 @@ defmodule ReqTelemetryTest do
     setup context do
       :telemetry.attach_many(
         "#{context[:test]}",
-        ReqTelemetry.events(),
+        ReqTele.events(),
         &Handler.handle_event/4,
         nil
       )
@@ -94,7 +94,7 @@ defmodule ReqTelemetryTest do
     end
 
     test "are emitted at the start and end of a request", %{mock_req: req} do
-      req.(%{}) |> ReqTelemetry.attach() |> Req.get!()
+      req.(%{}) |> ReqTele.attach() |> Req.get!()
 
       assert_received {:telemetry, [:req, :request, :pipeline, :start], _, _}
       assert_received {:telemetry, [:req, :request, :adapter, :start], _, _}
@@ -103,31 +103,31 @@ defmodule ReqTelemetryTest do
     end
 
     test "can be excluded with options to attach/1", %{mock_req: req} do
-      req.(%{}) |> ReqTelemetry.attach(false) |> Req.get!()
+      req.(%{}) |> ReqTele.attach(false) |> Req.get!()
       refute_received {:telemetry, [:req, :request, _, _], _, _}
 
-      req.(%{}) |> ReqTelemetry.attach(pipeline: false) |> Req.get!()
+      req.(%{}) |> ReqTele.attach(pipeline: false) |> Req.get!()
       assert_received {:telemetry, [:req, :request, :adapter, _], _, _}
       refute_received {:telemetry, [:req, :request, :pipeline, _], _, _}
     end
 
     test "can be overridden with options passed to the request", %{mock_req: req} do
-      req.(%{}) |> ReqTelemetry.attach() |> Req.get!(telemetry: false)
+      req.(%{}) |> ReqTele.attach() |> Req.get!(telemetry: false)
       refute_received {:telemetry, [:req, :request, _, _], _, _}
 
-      req.(%{}) |> ReqTelemetry.attach() |> Req.get!(telemetry: [adapter: false])
+      req.(%{}) |> ReqTele.attach() |> Req.get!(telemetry: [adapter: false])
       assert_received {:telemetry, [:req, :request, :pipeline, _], _, _}
       refute_received {:telemetry, [:req, :request, :adapter, _], _, _}
     end
 
     test "excluded in attach/1 can be overridden", %{mock_req: req} do
-      req.(%{}) |> ReqTelemetry.attach(false) |> Req.get!(telemetry: [adapter: true])
+      req.(%{}) |> ReqTele.attach(false) |> Req.get!(telemetry: [adapter: true])
       assert_received {:telemetry, [:req, :request, :adapter, _], _, _}
       refute_received {:telemetry, [:req, :request, :pipeline, _], _, _}
     end
 
     test "include a :time measurement for :start events", %{mock_req: req} do
-      req.(%{}) |> ReqTelemetry.attach() |> Req.get!()
+      req.(%{}) |> ReqTele.attach() |> Req.get!()
 
       for _ <- 1..2 do
         assert_received {:telemetry, [:req, :request, _, :start], %{time: ts}, _}
@@ -136,7 +136,7 @@ defmodule ReqTelemetryTest do
     end
 
     test "include a :duration measurement for :stop events", %{mock_req: req} do
-      req.(%{}) |> ReqTelemetry.attach() |> Req.get!()
+      req.(%{}) |> ReqTele.attach() |> Req.get!()
 
       for _ <- 1..2 do
         assert_received {:telemetry, [:req, :request, _, :stop], %{duration: d}, _}
@@ -145,7 +145,7 @@ defmodule ReqTelemetryTest do
     end
 
     test "include :url, :method, and :headers metadata for :start events", %{mock_req: req} do
-      req.(%{}) |> ReqTelemetry.attach() |> Req.post!()
+      req.(%{}) |> ReqTele.attach() |> Req.post!()
 
       for _ <- 1..2 do
         assert_received {:telemetry, [:req, :request, _, :start], _,
@@ -155,20 +155,20 @@ defmodule ReqTelemetryTest do
     end
 
     test "allows metadata to be sent with :start events", %{mock_req: req} do
-      req.(%{}) |> ReqTelemetry.attach(metadata: %{foo: "bar"}) |> Req.post!()
+      req.(%{}) |> ReqTele.attach(metadata: %{foo: "bar"}) |> Req.post!()
 
       for _ <- 1..2 do
         assert_received {:telemetry, [:req, :request, _, :start], _, %{metadata: %{foo: "bar"}}}
       end
 
-      req.(%{}) |> ReqTelemetry.attach() |> Req.post!(telemetry: [metadata: %{foo: "bar"}])
+      req.(%{}) |> ReqTele.attach() |> Req.post!(telemetry: [metadata: %{foo: "bar"}])
 
       for _ <- 1..2 do
         assert_received {:telemetry, [:req, :request, _, :start], _, %{metadata: %{foo: "bar"}}}
       end
 
       req.(%{})
-      |> ReqTelemetry.attach(metadata: %{foo: "bar"})
+      |> ReqTele.attach(metadata: %{foo: "bar"})
       |> Req.post!(telemetry: [metadata: %{baz: "buzz"}])
 
       for _ <- 1..2 do
@@ -177,7 +177,7 @@ defmodule ReqTelemetryTest do
       end
 
       req.(%{})
-      |> ReqTelemetry.attach(metadata: %{foo: "bar"})
+      |> ReqTele.attach(metadata: %{foo: "bar"})
       |> Req.post!(telemetry: [metadata: %{foo: "buzz"}])
 
       for _ <- 1..2 do
@@ -191,7 +191,7 @@ defmodule ReqTelemetryTest do
       resp_headers = [{"some", "header"}]
       resp_status = 201
 
-      req.(%{headers: resp_headers, status: resp_status}) |> ReqTelemetry.attach() |> Req.post!()
+      req.(%{headers: resp_headers, status: resp_status}) |> ReqTele.attach() |> Req.post!()
 
       for _ <- 1..2 do
         assert_received {:telemetry, [:req, :request, _, :stop], _,
@@ -209,7 +209,7 @@ defmodule ReqTelemetryTest do
     test "contains template path", %{
       mock_req: req
     } do
-      req.(%{}) |> ReqTelemetry.attach() |> Req.get!(
+      req.(%{}) |> ReqTele.attach() |> Req.get!(
         url: "/:foo/bar",
         path_params: [foo: 2137]
       )
@@ -225,7 +225,7 @@ defmodule ReqTelemetryTest do
 
     test "allows attach metadata to be sent with :stop events", %{mock_req: req} do
       req.(%{})
-      |> ReqTelemetry.attach(metadata: %{foo: "bar"})
+      |> ReqTele.attach(metadata: %{foo: "bar"})
       |> Req.post!()
 
       for _ <- 1..2 do
@@ -233,7 +233,7 @@ defmodule ReqTelemetryTest do
       end
 
       req.(%{})
-      |> ReqTelemetry.attach()
+      |> ReqTele.attach()
       |> Req.post!(telemetry: [metadata: %{foo: "bar"}])
 
       for _ <- 1..2 do
@@ -242,7 +242,7 @@ defmodule ReqTelemetryTest do
     end
 
     test "include a ref in metadata correlating :start and :stop events", %{mock_req: req} do
-      req.(%{}) |> ReqTelemetry.attach() |> Req.get!()
+      req.(%{}) |> ReqTele.attach() |> Req.get!()
 
       assert_received {:telemetry, [:req, :request, _, :start], _, %{ref: ref}}
                       when is_reference(ref)
@@ -253,7 +253,7 @@ defmodule ReqTelemetryTest do
     test "are not emitted if invalid options are given", %{mock_req: req} do
       message =
         capture_log(fn ->
-          req.(%{}) |> ReqTelemetry.attach() |> Req.get!(telemetry: :unknown)
+          req.(%{}) |> ReqTele.attach() |> Req.get!(telemetry: :unknown)
         end)
 
       refute_received {:telemetry, [:req, :request, _, _], _, _}
@@ -270,7 +270,7 @@ defmodule ReqTelemetryTest do
       assert {:error, _} =
                req.(error)
                |> Req.Request.merge_options(retry: false)
-               |> ReqTelemetry.attach()
+               |> ReqTele.attach()
                |> Req.get()
 
       assert_received {:telemetry, [:req, :request, _, :error], %{duration: d}, %{error: ^error}}
@@ -283,7 +283,7 @@ defmodule ReqTelemetryTest do
       assert {:error, _} =
                req.(error)
                |> Req.Request.merge_options(retry: false)
-               |> ReqTelemetry.attach(metadata: %{foo: "bar"})
+               |> ReqTele.attach(metadata: %{foo: "bar"})
                |> Req.get()
 
       assert_received {:telemetry, [:req, :request, _, :error], _, %{metadata: %{foo: "bar"}}}
@@ -291,7 +291,7 @@ defmodule ReqTelemetryTest do
       assert {:error, _} =
                req.(error)
                |> Req.Request.merge_options(retry: false)
-               |> ReqTelemetry.attach()
+               |> ReqTele.attach()
                |> Req.get(telemetry: [metadata: %{foo: "bar"}])
 
       assert_received {:telemetry, [:req, :request, _, :error], _, %{metadata: %{foo: "bar"}}}

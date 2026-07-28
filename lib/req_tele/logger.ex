@@ -1,4 +1,4 @@
-defmodule ReqTelemetry.Logger do
+defmodule ReqTele.Logger do
   @moduledoc false
 
   require Logger
