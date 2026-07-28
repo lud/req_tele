@@ -17,7 +17,8 @@ defmodule ReqTele.MixProject do
       deps: deps(),
       dialyzer: dialyzer(),
       docs: docs(),
-      package: package()
+      package: package(),
+      versioning: versioning()
     ]
   end
 
@@ -75,5 +76,29 @@ defmodule ReqTele.MixProject do
         "CHANGELOG.md": [title: "Changelog"]
       ]
     ]
+  end
+
+  defp versioning do
+    [
+      annotate: true,
+      before_commit: [
+        &readmix/1,
+        {:add, "README.md"},
+        &gen_changelog/1,
+        {:add, "CHANGELOG.md"}
+      ]
+    ]
+  end
+
+  def readmix(vsn) do
+    rdmx = Readmix.new(vars: %{app_vsn: vsn})
+    :ok = Readmix.update_file(rdmx, "README.md")
+  end
+
+  defp gen_changelog(vsn) do
+    case System.cmd("git", ["cliff", "--tag", vsn, "-o", "CHANGELOG.md"], stderr_to_stdout: true) do
+      {_, 0} -> IO.puts("Updated CHANGELOG.md with #{vsn}")
+      {out, _} -> {:error, "Could not update CHANGELOG.md:\n\n #{out}"}
+    end
   end
 end
