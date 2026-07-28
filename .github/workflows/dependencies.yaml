@@ -1,0 +1,22 @@
+name: "Mix Dependency Submission"
+
+on:
+  push:
+    branches:
+      - "main"
+    paths:
+      - "mix.lock"
+      - "mix.exs"
+
+# The API requires write permission on the repository to submit dependencies
+permissions:
+  contents: write
+
+jobs:
+  report_mix_deps:
+    name: "Report Mix Dependencies"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: erlef/mix-dependency-submission@v1
+        
