@@ -1,6 +1,12 @@
-[![Hex.pm](https://img.shields.io/hexpm/v/req_tele)](https://hex.pm/packages/req_tele)
-[![HexDocs.pm](https://img.shields.io/badge/hex.pm-docs-8e7ce6.svg)](https://hexdocs.pm/req_tele)
-[![CI](https://github.com/lud/req_tele/actions/workflows/ci.yml/badge.svg)](https://github.com/lud/req_tele/actions/workflows/ci.yml)
+<!-- rdmx :badges
+    hexpm         : "req_tele?color=4e2a8e"
+    github_action : "lud/req_tele/elixir.yaml?label=CI&branch=main"
+    license       : req_tele
+    -->
+[![hex.pm Version](https://img.shields.io/hexpm/v/req_tele?color=4e2a8e)](https://hex.pm/packages/req_tele)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/lud/req_tele/elixir.yaml?label=CI&branch=main)](https://github.com/lud/req_tele/actions/workflows/elixir.yaml?query=branch%3Amain)
+[![License](https://img.shields.io/hexpm/l/req_tele.svg)](https://hex.pm/packages/req_tele)
+<!-- rdmx /:badges -->
 
 > [!NOTE]
 > This project is a fork of [`req_telemetry`](https://github.com/zachallaun/req_telemetry)
@@ -62,10 +68,12 @@ For usage and configuration, see `ReqTele.attach_default_logger/1`.
 `req_tele` is available through [hex.pm](https://hex.pm/packages/req_tele), and can be
 installed by adding the following to your list of dependencies:
 
+<!-- rdmx :app_dep vsn:$app_vsn -->
 ```elixir
-def deps do
+defp deps do
   [
-    {:req_tele, "~> 0.1.0"}
+    {:req_tele, "~> 0.1"},
   ]
 end
 ```
+<!-- rdmx /:app_dep -->

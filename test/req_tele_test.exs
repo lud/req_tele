@@ -209,7 +209,9 @@ defmodule ReqTeleTest do
     test "contains template path", %{
       mock_req: req
     } do
-      req.(%{}) |> ReqTele.attach() |> Req.get!(
+      req.(%{})
+      |> ReqTele.attach()
+      |> Req.get!(
         url: "/:foo/bar",
         path_params: [foo: 2137]
       )

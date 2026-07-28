@@ -186,7 +186,7 @@ defmodule ReqTele do
   def attach_default_logger(events) when is_list(events) do
     unknown_events = events -- @all_events
 
-    unless unknown_events == [] do
+    if unknown_events != [] do
       raise ArgumentError, """
       cannot attach ReqTele logger to unknown events: #{inspect(unknown_events)}
       """
@@ -333,6 +333,7 @@ defmodule ReqTele do
 
   defp normalize_opts(opts), do: {:error, opts}
 
+  @spec options_error!(term) :: no_return
   defp options_error!(opts) do
     raise ArgumentError, options_error(opts)
   end
@@ -362,6 +363,7 @@ defmodule ReqTele do
     case req.private do
       %{path_params_template: template} ->
         %{req.url | path: template}
+
       _ ->
         req.url
     end
