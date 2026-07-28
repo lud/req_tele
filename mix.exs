@@ -2,7 +2,7 @@ defmodule ReqTele.MixProject do
   use Mix.Project
 
   @name "ReqTele"
-  @version "0.1.2"
+  @version "0.2.0"
   @source_url "https://github.com/lud/req_tele"
 
   def project do
