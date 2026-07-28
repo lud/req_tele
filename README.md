@@ -2,6 +2,12 @@
 [![HexDocs.pm](https://img.shields.io/badge/hex.pm-docs-8e7ce6.svg)](https://hexdocs.pm/req_telemetry)
 [![CI](https://github.com/zachallaun/req_telemetry/actions/workflows/ci.yml/badge.svg)](https://github.com/zachallaun/req_telemetry/actions/workflows/ci.yml)
 
+> [!NOTE]
+> This project is a fork of [`req_telemetry`](https://github.com/zachallaun/req_telemetry)
+> by [Zach Allaun](https://github.com/zachallaun), maintained and published
+> independently. It includes community contributions from the original
+> repository.
+
 <!-- MDOC !-->
 
 [`Req`](https://hexdocs.pm/req) plugin to instrument requests with `:telemetry` events.
