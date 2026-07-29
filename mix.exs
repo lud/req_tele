@@ -12,7 +12,7 @@ defmodule ReqTele.MixProject do
       version: @version,
       description: "Req plugin to instrument requests with Telemetry events",
       source_url: @source_url,
-      elixir: "~> 1.13",
+      elixir: "~> 1.15",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       dialyzer: dialyzer(),
@@ -40,7 +40,7 @@ defmodule ReqTele.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:req, "~> 0.6"},
+      {:req, "~> 0.7"},
       {:telemetry, "~> 1.0"},
 
       # Dev

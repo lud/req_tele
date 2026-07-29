@@ -172,6 +172,15 @@ defmodule ReqTele do
       15:52:04.174 [error] Req:42446822 - ERROR in 2012ms (adapter)
       %Finch.Error{reason: :request_timeout}
 
+  A request that was retried once logs both attempts under the same id:
+
+      15:52:06.031 [info] Req:87361044 - GET https://example.org (pipeline)
+      15:52:06.032 [info] Req:87361044 - GET https://example.org (adapter)
+      15:52:06.244 [info] Req:87361044 - 500 in 212ms (adapter)
+      15:52:07.298 [info] Req:87361044 - GET https://example.org (adapter, attempt 2)
+      15:52:07.501 [info] Req:87361044 - 200 in 203ms (adapter, attempt 2)
+      15:52:07.507 [info] Req:87361044 - 200 in 1476ms (pipeline, attempt 2)
+
   """
   @spec attach_default_logger(:all | :adapter | :pipeline | [:telemetry.event_name(), ...]) ::
           :ok | {:error, :already_exists}
@@ -202,8 +211,16 @@ defmodule ReqTele do
 
   @doc false
   def telemetry_setup(%Req.Request{} = req) do
-    private = Req.Request.get_private(req, :telemetry)
-    req = Req.Request.put_private(req, :telemetry, Map.put(private, :ref, make_ref()))
+    # Retries and redirects re-run the request steps, so this runs once per
+    # attempt. The ref identifies the logical request and is kept across
+    # attempts, while the attempt counter tells them apart.
+    private =
+      req
+      |> Req.Request.get_private(:telemetry)
+      |> Map.put_new(:ref, make_ref())
+      |> Map.update(:attempt, 1, &(&1 + 1))
+
+    req = Req.Request.put_private(req, :telemetry, private)
 
     case fetch_options(req) do
       {:ok, opts} ->
@@ -231,9 +248,10 @@ defmodule ReqTele do
   @doc false
   def emit_start(req, event) do
     start_time = System.monotonic_time()
+    private = Req.Request.get_private(req, :telemetry)
 
-    if emit?(req, event) do
-      %{ref: ref} = private = Req.Request.get_private(req, :telemetry)
+    if emit_start?(req, event, private) do
+      %{ref: ref, attempt: attempt} = private
       %{method: method, headers: headers} = req
 
       :telemetry.execute(
@@ -241,6 +259,7 @@ defmodule ReqTele do
         %{time: System.system_time()},
         %{
           ref: ref,
+          attempt: attempt,
           url: url(req),
           method: method,
           headers: headers,
@@ -255,12 +274,23 @@ defmodule ReqTele do
     end
   end
 
+  # The adapter runs once per attempt, so its start is emitted on every attempt.
+  # The pipeline spans all attempts of a logical request, so its start is
+  # emitted on the first one and its start time is kept from then on.
+  defp emit_start?(req, :pipeline, private) do
+    emit?(req, :pipeline) and not is_map_key(private, :pipeline)
+  end
+
+  defp emit_start?(req, :adapter, _private) do
+    emit?(req, :adapter)
+  end
+
   @doc false
   def emit_stop({req, resp}, event) do
     stop_time = System.monotonic_time()
 
     if emit?(req, event) do
-      %{ref: ref} = Req.Request.get_private(req, :telemetry)
+      %{ref: ref, attempt: attempt} = Req.Request.get_private(req, :telemetry)
       %{method: method} = req
       %{status: status, headers: headers} = resp
 
@@ -269,6 +299,7 @@ defmodule ReqTele do
         %{duration: duration(req, event, stop_time)},
         %{
           ref: ref,
+          attempt: attempt,
           url: url(req),
           method: method,
           status: status,
@@ -288,7 +319,7 @@ defmodule ReqTele do
     stop_time = System.monotonic_time()
 
     if emit?(req, event) do
-      %{ref: ref} = Req.Request.get_private(req, :telemetry)
+      %{ref: ref, attempt: attempt} = Req.Request.get_private(req, :telemetry)
       %{method: method, headers: headers} = req
 
       :telemetry.execute(
@@ -296,6 +327,7 @@ defmodule ReqTele do
         %{duration: duration(req, event, stop_time)},
         %{
           ref: ref,
+          attempt: attempt,
           url: url(req),
           method: method,
           headers: headers,

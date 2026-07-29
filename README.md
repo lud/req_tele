@@ -31,7 +31,7 @@ processing the request and response, as well as the time spent only with the req
 req = Req.new() |> ReqTele.attach()
 
 req =
-  Req.new(adapter: &my_adapter/1)
+  Req.new(adapter: MyAdapter)
   |> ReqSomeOtherThing.attach()
   |> ReqTele.attach()
 ```
@@ -49,6 +49,18 @@ req =
 
 You can configure `ReqTele` to produce only `:pipeline` or `:adapter` events; see
 `ReqTele.attach/2` for options.
+
+All events carry a `:ref` and an `:attempt` in their metadata.
+
+The `:ref` identifies the logical request and stays the same for all of its events,
+so a `:start` event can be paired with the `:stop` or `:error` event that closes it.
+
+Retries and redirects run the request through the adapter several times, and `:attempt`
+counts those runs, starting at `1`. Each run emits its own pair of `:adapter` events,
+while the `:pipeline` events wrap the whole request: `[:req, :request, :pipeline, :start]`
+is emitted for the first attempt, and its duration covers every attempt along with the
+delays between them. Handlers that track one span per request can key on `:ref` alone,
+and handlers that track individual HTTP calls can key on `{ref, attempt}`.
 
 ## Logging
 

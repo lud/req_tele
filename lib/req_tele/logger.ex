@@ -6,32 +6,38 @@ defmodule ReqTele.Logger do
   def handle_event(
         [_, _, event, :start],
         _measurements,
-        %{ref: ref, url: url, method: method},
+        %{ref: ref, url: url, method: method} = meta,
         _config
       ) do
-    log(:info, [prefix(ref), format_method(method), " ", to_string(url), suffix(event)])
+    log(:info, [prefix(ref), format_method(method), " ", to_string(url), suffix(event, meta)])
   end
 
   def handle_event(
         [_, _, event, :stop],
         %{duration: duration},
-        %{ref: ref, status: status},
+        %{ref: ref, status: status} = meta,
         _config
       ) do
-    log(:info, [prefix(ref), to_string(status), " in ", format_duration(duration), suffix(event)])
+    log(:info, [
+      prefix(ref),
+      to_string(status),
+      " in ",
+      format_duration(duration),
+      suffix(event, meta)
+    ])
   end
 
   def handle_event(
         [_, _, event, :error],
         %{duration: duration},
-        %{ref: ref, error: error},
+        %{ref: ref, error: error} = meta,
         _config
       ) do
     log(:error, [
       prefix(ref),
       "ERROR in ",
       format_duration(duration),
-      suffix(event),
+      suffix(event, meta),
       "\n",
       inspect(error)
     ])
@@ -45,7 +51,11 @@ defmodule ReqTele.Logger do
     ["Req:", format_ref(ref), " - "]
   end
 
-  defp suffix(event) do
+  defp suffix(event, %{attempt: attempt}) when attempt > 1 do
+    [" (", to_string(event), ", attempt ", to_string(attempt), ")"]
+  end
+
+  defp suffix(event, _meta) do
     [" (", to_string(event), ")"]
   end
 

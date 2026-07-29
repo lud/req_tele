@@ -63,32 +63,48 @@ defmodule ReqTeleTest do
       end
     end
 
+    defmodule MockAdapter do
+      def run(request) do
+        case Req.Request.get_private(request, :mock) do
+          fun when is_function(fun, 1) -> fun.(request)
+          %Req.Response{} = resp -> {request, resp}
+          %{__exception__: true} = error -> {request, error}
+        end
+      end
+    end
+
+    defp mock(result, opts \\ []) do
+      opts
+      |> Keyword.merge(url: @default_url, adapter: MockAdapter)
+      |> Req.new()
+      |> Req.Request.put_private(:mock, result)
+    end
+
     setup context do
+      handler_id = "#{context[:test]}"
+
       :telemetry.attach_many(
-        "#{context[:test]}",
+        handler_id,
         ReqTele.events(),
         &Handler.handle_event/4,
         nil
       )
 
+      # Handlers are global, so leaving them attached would make later tests
+      # receive one copy of each event per test that ran before them.
+      on_exit(fn -> :telemetry.detach(handler_id) end)
+
       mock_req = fn resp_attrs ->
-        Req.new(
-          url: @default_url,
-          adapter: fn request ->
-            response = %Req.Response{
-              status: @default_status,
-              headers: @default_headers,
-              body: @default_body
-            }
+        response = %Req.Response{
+          status: @default_status,
+          headers: @default_headers,
+          body: @default_body
+        }
 
-            {request, Map.merge(response, resp_attrs)}
-          end
-        )
+        mock(Map.merge(response, resp_attrs))
       end
 
-      mock_error = fn error ->
-        Req.new(url: @default_url, adapter: fn request -> {request, error} end)
-      end
+      mock_error = fn error -> mock(error) end
 
       %{mock_req: mock_req, mock_error: mock_error}
     end
@@ -298,5 +314,105 @@ defmodule ReqTeleTest do
 
       assert_received {:telemetry, [:req, :request, _, :error], _, %{metadata: %{foo: "bar"}}}
     end
+
+    test "emit one adapter pair per attempt and a single pipeline pair when retrying" do
+      Process.put(:responses, [
+        %Req.Response{status: 500, headers: %{}, body: ""},
+        %Req.Response{status: 200, headers: %{}, body: ""}
+      ])
+
+      mock(&pop_response/1, retry_delay: 1, retry_log_level: false)
+      |> ReqTele.attach()
+      |> Req.get!()
+
+      assert_received {:telemetry, [:req, :request, :pipeline, :start], _,
+                       %{ref: ref, attempt: 1}}
+
+      assert_received {:telemetry, [:req, :request, :adapter, :start], _,
+                       %{ref: ^ref, attempt: 1}}
+
+      assert_received {:telemetry, [:req, :request, :adapter, :stop], _, %{ref: ^ref, attempt: 1}}
+
+      assert_received {:telemetry, [:req, :request, :adapter, :start], _,
+                       %{ref: ^ref, attempt: 2}}
+
+      assert_received {:telemetry, [:req, :request, :adapter, :stop], _, %{ref: ^ref, attempt: 2}}
+
+      assert_received {:telemetry, [:req, :request, :pipeline, :stop], _,
+                       %{ref: ^ref, attempt: 2}}
+
+      refute_received {:telemetry, [:req, :request, _, _], _, _}
+    end
+
+    test "emit one adapter pair per attempt and a single pipeline pair when redirecting" do
+      location = "#{@default_url}/final"
+
+      Process.put(:responses, [
+        %Req.Response{status: 302, headers: %{"location" => [location]}, body: ""},
+        %Req.Response{status: 200, headers: %{}, body: ""}
+      ])
+
+      mock(&pop_response/1) |> ReqTele.attach() |> Req.get!()
+
+      assert_received {:telemetry, [:req, :request, :pipeline, :start], _,
+                       %{ref: ref, attempt: 1}}
+
+      assert_received {:telemetry, [:req, :request, :adapter, :start], _,
+                       %{ref: ^ref, attempt: 1}}
+
+      assert_received {:telemetry, [:req, :request, :adapter, :stop], _, %{ref: ^ref, attempt: 1}}
+
+      assert_received {:telemetry, [:req, :request, :adapter, :start], _,
+                       %{ref: ^ref, attempt: 2, url: %URI{path: "/final"}}}
+
+      assert_received {:telemetry, [:req, :request, :adapter, :stop], _, %{ref: ^ref, attempt: 2}}
+
+      assert_received {:telemetry, [:req, :request, :pipeline, :stop], _,
+                       %{ref: ^ref, attempt: 2}}
+
+      refute_received {:telemetry, [:req, :request, _, _], _, _}
+    end
+
+    test "measure every attempt in the pipeline duration" do
+      delay = 50
+
+      Process.put(:responses, [
+        %Req.Response{status: 500, headers: %{}, body: ""},
+        %Req.Response{status: 200, headers: %{}, body: ""}
+      ])
+
+      mock(&pop_response/1, retry_delay: delay, retry_log_level: false)
+      |> ReqTele.attach()
+      |> Req.get!()
+
+      assert_received {:telemetry, [:req, :request, :pipeline, :stop], %{duration: duration}, _}
+      assert System.convert_time_unit(duration, :native, :millisecond) >= delay
+    end
+
+    test "emit one adapter error per attempt and a single pipeline error" do
+      error = Req.TransportError.exception(reason: :timeout)
+
+      assert {:error, _} =
+               error
+               |> mock(max_retries: 1, retry_delay: 1, retry_log_level: false)
+               |> ReqTele.attach()
+               |> Req.get()
+
+      assert_received {:telemetry, [:req, :request, :adapter, :error], _, %{ref: ref, attempt: 1}}
+
+      assert_received {:telemetry, [:req, :request, :adapter, :error], _,
+                       %{ref: ^ref, attempt: 2}}
+
+      assert_received {:telemetry, [:req, :request, :pipeline, :error], _,
+                       %{ref: ^ref, attempt: 2}}
+
+      refute_received {:telemetry, [:req, :request, _, :error], _, _}
+    end
+  end
+
+  defp pop_response(request) do
+    [response | rest] = Process.get(:responses)
+    Process.put(:responses, rest)
+    {request, response}
   end
 end
