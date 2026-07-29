@@ -86,7 +86,7 @@ installed by adding the following to your list of dependencies:
 ```elixir
 defp deps do
   [
-    {:req_tele, "~> 0.2"},
+    {:req_tele, "~> 0.3"},
   ]
 end
 ```
